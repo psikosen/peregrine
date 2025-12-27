@@ -1,0 +1,86 @@
+syntax = "proto3";
+
+package router.v1;
+
+option go_package = "github.com/peregrine/router/api/proto/routerpb";
+
+service LLMRouter {
+  // Complete sends a prompt to the best available LLM provider
+  rpc Complete(CompleteRequest) returns (CompleteResponse);
+
+  // GetHealth returns the health status of all providers
+  rpc GetHealth(HealthRequest) returns (HealthResponse);
+
+  // ListProviders returns available providers and their capabilities
+  rpc ListProviders(ListProvidersRequest) returns (ListProvidersResponse);
+}
+
+message CompleteRequest {
+  // Agent role: "modeler" or "solver"
+  string agent_role = 1;
+
+  // Static system prompt (cached by ngrok)
+  string system_prompt = 2;
+
+  // Dynamic user prompt (suffix tokens)
+  string user_prompt = 3;
+
+  // LLM temperature (0.0 - 1.0)
+  double temperature = 4;
+
+  // Maximum tokens to generate
+  int32 max_tokens = 5;
+
+  // Additional metadata for routing decisions
+  map<string, string> metadata = 6;
+
+  // Required capabilities for this request
+  repeated string required_capabilities = 7;
+}
+
+message CompleteResponse {
+  // Generated content
+  string content = 1;
+
+  // Provider that handled the request
+  string provider = 2;
+
+  // Model confidence (0.0 - 1.0)
+  double confidence = 3;
+
+  // Tokens used for generation
+  int32 tokens_used = 4;
+
+  // Whether prompt was served from cache
+  bool cached = 5;
+
+  // Processing latency in milliseconds
+  int64 latency_ms = 6;
+}
+
+message HealthRequest {}
+
+message HealthResponse {
+  repeated ProviderHealth providers = 1;
+}
+
+message ProviderHealth {
+  string name = 1;
+  bool available = 2;
+  int32 failure_count = 3;
+  int64 last_check_ms = 4;
+  string status_message = 5;
+}
+
+message ListProvidersRequest {}
+
+message ListProvidersResponse {
+  repeated ProviderInfo providers = 1;
+}
+
+message ProviderInfo {
+  string name = 1;
+  int32 priority = 2;
+  repeated string capabilities = 3;
+  bool available = 4;
+}
